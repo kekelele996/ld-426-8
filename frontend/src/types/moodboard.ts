@@ -4,6 +4,7 @@ export interface MoodBoard {
   description: string;
   createdAt: string;
   coverImageUrl: string;
+  coverImageId?: string;
   imageIds: string[];
   tags: string[];
 }

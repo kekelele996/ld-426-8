@@ -14,24 +14,53 @@
     </div>
     <EmptyState v-else text="完成一次风格测试后，这里会出现你的长期偏好档案" />
     <div class="grid gap-4 lg:grid-cols-3">
-      <MoodBoardCard v-for="board in boards.boards" :key="board.id" :board="board" />
+      <MoodBoardCard v-for="board in boards.boards" :key="board.id" :board="board" @select-cover="openCoverSelector(board)" />
     </div>
+    <CoverSelector
+      :visible="coverSelectorVisible"
+      :board-id="selectedBoard?.id || ''"
+      :board-name="selectedBoard?.name || ''"
+      :board-image-ids="selectedBoard?.imageIds || []"
+      :all-images="inspirations.images"
+      :current-cover-id="selectedBoard?.coverImageId"
+      @close="coverSelectorVisible = false"
+      @confirm="handleCoverConfirm"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
+import CoverSelector from '../components/common/CoverSelector.vue';
 import EmptyState from '../components/common/EmptyState.vue';
 import MoodBoardCard from '../components/common/MoodBoardCard.vue';
 import StyleRadarChart from '../components/common/StyleRadarChart.vue';
 import { styleDescriptions } from '../constants/styleDescriptions';
+import { useInspirationStore } from '../stores/inspirationStore';
 import { useMoodboardStore } from '../stores/moodboardStore';
 import { useProfileStore } from '../stores/profileStore';
+import { MoodBoard } from '../types';
 
 const profile = useProfileStore();
 const boards = useMoodboardStore();
+const inspirations = useInspirationStore();
+const coverSelectorVisible = ref(false);
+const selectedBoard = ref<MoodBoard | null>(null);
+
+function openCoverSelector(board: MoodBoard) {
+  selectedBoard.value = board;
+  coverSelectorVisible.value = true;
+}
+
+async function handleCoverConfirm(imageId: string, imageUrl: string) {
+  if (selectedBoard.value) {
+    await boards.setCoverImage(selectedBoard.value.id, imageId, imageUrl);
+  }
+  coverSelectorVisible.value = false;
+}
 
 onMounted(async () => {
+  await inspirations.seed();
   await profile.loadProfile();
   await boards.load();
 });
